@@ -17,6 +17,7 @@ class WebdavPlugin(StellarPlayer.IStellarPlayerPlugin):
         self.url = ''
         self.webdav = None
         self.path = '/'
+        self.basepath = '/'
         self.dir = None
         self.username = ''
         self.password = ''
@@ -73,6 +74,8 @@ class WebdavPlugin(StellarPlayer.IStellarPlayerPlugin):
                     'height': 30
                 },
                 {'type': 'space', 'height': 10},
+                {'type': 'edit', 'name': '子路径', 'height': 30, 'value': self.basepath},
+                {'type': 'space', 'height': 10},
                 {'type': 'edit', 'name': '用户名', 'height': 30, 'value': self.username},
                 {'type': 'space', 'height': 10},
                 {'type': 'edit', 'name': '密码', 'height': 30, 'value': self.password},
@@ -105,6 +108,7 @@ class WebdavPlugin(StellarPlayer.IStellarPlayerPlugin):
             config = json.load(f)
             self.host = config.get('host', '')
             self.port = config.get('port', '')
+            self.basepath = config.get('basepath', '')
             self.username = config.get('username', '')
             self.password = config.get('password', '')
             self.ssl = config.get('ssl', False)
@@ -116,7 +120,7 @@ class WebdavPlugin(StellarPlayer.IStellarPlayerPlugin):
     def save_config(self):
         try:
             f = open('config.json', 'w')
-            json.dump({'host': self.host, 'port': self.port, 'username': self.username, 'password': self.password,
+            json.dump({'host': self.host, 'port': self.port, 'basepath': self.basepath, 'username': self.username, 'password': self.password,
                        'ssl': self.ssl, 'verify': self.verify}, f)
             f.close()
         except:
@@ -125,18 +129,20 @@ class WebdavPlugin(StellarPlayer.IStellarPlayerPlugin):
     def on_connect_webdav(self, *arg):
         self.host = self.player.getControlValue('login', '主机名')
         self.port = self.player.getControlValue('login', '端口')
+        self.basepath = self.player.getControlValue('login', '子路径')
         self.username = self.player.getControlValue('login', '用户名')
         self.password = self.player.getControlValue('login', '密码')
         self.ssl = self.player.getControlValue('login', 'SSL')
         self.protocol = 'https' if self.ssl else 'http'
         self.verify = self.player.getControlValue('login', '验证SSL证书')
         self.save_config()
+        self.path = self.basepath
         self.player.loadingAnimation('login')
         try:
             self.webdav = easywebdav.connect(self.host, port=int(self.port), username=self.username,
                                              password=self.password, protocol=self.protocol,
                                              verify_ssl=self.verify)
-            self.webdav.ls()
+            self.webdav.ls(self.basepath)
             self.player.closeModal('login', True)
             self.show()
         except Exception as e:
@@ -154,7 +160,7 @@ class WebdavPlugin(StellarPlayer.IStellarPlayerPlugin):
             self.player.play(f'{self.protocol}://{self.username}:{self.password}@{self.host}:{self.port}' + file.name)
 
     def on_click_back(self, *arg):
-        if self.path != '/':
+        if self.path != self.basepath:
             temp = self.path.split('/')
             paths = []
             for i in temp:
