@@ -41,6 +41,7 @@ class WebdavPlugin(StellarPlayer.IStellarPlayerPlugin):
         self.dir = self.webdav.ls(self.path)[1:]
         print(self.dir)
         # 文件夹类型排在前面
+        self.dir.sort()
         self.dir.sort(key=lambda item: 0 if self.isdir(item) else 1)
         list_val = []
         for i in self.dir:
